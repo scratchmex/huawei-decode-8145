@@ -1,19 +1,81 @@
-<html>
-    <head>
-        <meta charset="utf-8"/>
-        <script src="./wasm_exec.js"></script>
-        <script>
-            const go = new Go();
-            WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then((result) => {
-                go.run(result.instance);
-            });
+<!DOCTYPE html>
+<html lang="en">
 
-            let fi = document.getElementById("fileInput")
-            let fo = document.getElementById("fileOutput")
-        </script>
-    </head>
-    <body>
-        <input type="file" name="" id="fileInput">
-        <output id="fileOutput"></output>
-    </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>huawei encode/decode xml</title>
+
+    <!-- <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" /> -->
+    <link href="https://cdn.jsdelivr.net/combine/npm/daisyui@5/base/rootscrollgutter.css,npm/daisyui@5/base/reset.css,npm/daisyui@5/base/rootcolor.css,npm/daisyui@5/base/scrollbar.css,npm/daisyui@5/base/svg.css,npm/daisyui@5/base/rootscrolllock.css,npm/daisyui@5/base/properties.css,npm/daisyui@5/components/fileinput.css,npm/daisyui@5/components/input.css,npm/daisyui@5/components/select.css,npm/daisyui@5/components/toggle.css,npm/daisyui@5/components/footer.css,npm/daisyui@5/theme/dark.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" defer></script>
+</head>
+
+<body data-theme="dark" class="base-100 h-screen">
+    <h2 class="p-4">huawei encode/decode xml</h2>
+
+    <div class="px-4 flex flex-col gap-2">
+        <div>
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">hw_tree.xml</legend>
+                <input type="file" class="file-input" name="" id="fileInput">
+            </fieldset>
+        </div>
+        <div>
+            decode
+            <input type="checkbox" class="toggle" id="action" />
+            encode
+        </div>
+
+        <div id="decode-suc" style="display: none;" class="text-success">output copied to clipboard</div>
+
+        <div class="mt-4">
+            <div>disclaimer</div>
+            <p class="text-sm">tested with HG8145V5</p>
+            <p class="text-sm">haven't able to make the router to accept the encoded file, but test it</p>
+        </div>
+    </div>
+
+    <script src="./wasm_exec.js"></script>
+    <script async>
+        const go = new Go();
+        WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then((result) => {
+            go.run(result.instance);
+        });
+
+        let fi = document.getElementById("fileInput")
+        let tog = document.getElementById("action")
+        let fo = document.getElementById("fileOutput")
+
+        function reset() {
+            document.getElementById("decode-suc").style.display = "none";
+        }
+        fi.onclick = (e) => reset()
+        tog.onclick = (e) => reset()
+
+        fi.oninput = async (e) => {
+            let file = e.target.files[0]
+            let content = await file.bytes()
+            var action
+            var out
+            if (!tog.checked) {
+                out = decode(content)
+                await navigator.clipboard.writeText(out)
+                document.getElementById("decode-suc").style.display = "block";
+                action = "decoded"
+            } else {
+                out = encode(content)
+                action = "encoded"
+            }
+
+            let blob = new Blob([out], { type: 'application/octet-stream' })
+            let bloburl = URL.createObjectURL(blob)
+            let link = document.createElement('a')
+            link.href = bloburl
+            link.download = file.name.replace(/\.xml$/, "") + `_${action}.xml`
+            link.click()
+        }
+    </script>
+</body>
+
 </html>

@@ -6,30 +6,22 @@ package main
 
 import "syscall/js"
 
+func getBytesFromJs(v js.Value) []byte {
+	size := v.Get("byteLength").Int()
+	dst := make([]byte, size)
+	js.CopyBytesToGo(dst, v)
+	return dst
+}
+
 func main() {
 	js.Global().Set("encode", js.FuncOf(func(this js.Value, args []js.Value) any {
-		return string(encode([]byte(args[0].String())))
+		input := getBytesFromJs(args[0])
+		return string(encode(input))
 	}))
 
-	document := js.Global().Get("document")
-
-	fileInput := document.Call("getElementById", "fileInput")
-	fileOutput := document.Call("getElementById", "fileOutput")
-
-	fileInput.Set("oninput", js.FuncOf(func(v js.Value, x []js.Value) any {
-		fileInput.Get("files").Call("item", 0).Call("arrayBuffer").Call("then", js.FuncOf(func(v js.Value, x []js.Value) any {
-			data := js.Global().Get("Uint8Array").New(x[0])
-			dst := make([]byte, data.Get("length").Int())
-			js.CopyBytesToGo(dst, data)
-
-			out := string(decode(dst))
-
-			fileOutput.Set("innerText", out)
-
-			return nil
-		}))
-
-		return nil
+	js.Global().Set("decode", js.FuncOf(func(this js.Value, args []js.Value) any {
+		input := getBytesFromJs(args[0])
+		return string(decode(input))
 	}))
 
 	select {}

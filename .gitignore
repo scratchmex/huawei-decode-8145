@@ -1,3 +1,4 @@
 data/
 main.wasm
 wasm_exec.js
+buildweb/
