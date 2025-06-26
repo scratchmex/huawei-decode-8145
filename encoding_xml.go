@@ -40,10 +40,10 @@ the HMAC is encrypt-then-mac
 the AES key (mainkey) is obtained by composing sha256 func 8192 times with the previous value + the init key. the first value are 32 bytes in which the first 16 bytes is the IV
 */
 
-var InitKey = []byte("hex:13395537D2730554A176799F6D56A239")
-var DefaultName = "hw_tree.xml"
+var XmlInitKey = []byte("hex:13395537D2730554A176799F6D56A239")
+var XmlDefaultName = "hw_tree.xml"
 
-func encode(data []byte) []byte {
+func XmlEncode(data []byte) []byte {
 	compdatabuf := bytes.Buffer{}
 	gzipw := gzip.NewWriter(&compdatabuf)
 	if _, err := io.Copy(gzipw, bytes.NewReader(data)); err != nil {
@@ -53,12 +53,12 @@ func encode(data []byte) []byte {
 	compdata := compdatabuf.Bytes()
 	lenmod := len(compdata) % aes.BlockSize
 
-	iv := getIv(uint(len(data)), DefaultName)
+	iv := XmlGetIv(uint(len(data)), XmlDefaultName)
 
 	iv[15] &= 0xF0
 	iv[15] |= byte(lenmod)
 
-	mainkey := getMainKey(iv)
+	mainkey := XmlGetMainKey(iv)
 
 	hmach := hmac.New(sha256.New, mainkey)
 	cblock, err := aes.NewCipher(mainkey)
@@ -89,7 +89,7 @@ func encode(data []byte) []byte {
 	}
 
 	crch := crc32.New(&crc32_ccit_table)
-	crch.Write([]byte(DefaultName))
+	crch.Write([]byte(XmlDefaultName))
 
 	header[0] = 1
 	binary.LittleEndian.PutUint32(header[4:8], crch.Sum32())
@@ -100,14 +100,14 @@ func encode(data []byte) []byte {
 	return output
 }
 
-func decode(input []byte) []byte {
+func XmlDecode(input []byte) []byte {
 	// header := input[:8]
 	iv := input[8 : 8+16]
 	cipherdata := input[8+16 : len(input)-32]
 	filehmac := input[len(input)-32:]
 	lenmod := int(iv[15] & 0x0F)
 
-	mainkey := getMainKey(iv)
+	mainkey := XmlGetMainKey(iv)
 
 	hmach := hmac.New(sha256.New, mainkey)
 	cblock, err := aes.NewCipher(mainkey)
@@ -152,7 +152,7 @@ func decode(input []byte) []byte {
 
 // solely purpose to make it reproducable
 // sha256(filesize + filename)[:16]
-func getIv(size uint, name string) []byte {
+func XmlGetIv(size uint, name string) []byte {
 	dig := sha256.New()
 	binary.Write(dig, binary.BigEndian, size)
 	dig.Write([]byte(name))
@@ -160,7 +160,7 @@ func getIv(size uint, name string) []byte {
 	return dig.Sum(nil)[:16]
 }
 
-func getMainKey(iv []byte) []byte {
+func XmlGetMainKey(iv []byte) []byte {
 	mainkey := make([]byte, 32)
 	copy(mainkey[0:16], iv)
 
@@ -168,7 +168,7 @@ func getMainKey(iv []byte) []byte {
 	for range 8192 {
 		// log.Printf("digest %d: %x", i, mainkey)
 		keydig.Write(mainkey)
-		keydig.Write(InitKey)
+		keydig.Write(XmlInitKey)
 		mainkey = keydig.Sum(nil)
 		keydig.Reset()
 	}

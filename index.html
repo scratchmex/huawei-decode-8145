@@ -7,32 +7,53 @@
     <title>huawei encode/decode xml</title>
 
     <!-- <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" /> -->
-    <link href="https://cdn.jsdelivr.net/combine/npm/daisyui@5/base/rootscrollgutter.css,npm/daisyui@5/base/reset.css,npm/daisyui@5/base/rootcolor.css,npm/daisyui@5/base/scrollbar.css,npm/daisyui@5/base/svg.css,npm/daisyui@5/base/rootscrolllock.css,npm/daisyui@5/base/properties.css,npm/daisyui@5/components/fileinput.css,npm/daisyui@5/components/input.css,npm/daisyui@5/components/select.css,npm/daisyui@5/components/toggle.css,npm/daisyui@5/components/footer.css,npm/daisyui@5/theme/dark.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/combine/npm/daisyui@5/base/rootscrollgutter.css,npm/daisyui@5/base/reset.css,npm/daisyui@5/base/rootcolor.css,npm/daisyui@5/base/scrollbar.css,npm/daisyui@5/base/svg.css,npm/daisyui@5/base/rootscrolllock.css,npm/daisyui@5/base/properties.css,npm/daisyui@5/components/fileinput.css,npm/daisyui@5/components/fieldset.css,npm/daisyui@5/components/input.css,npm/daisyui@5/components/toggle.css,npm/daisyui@5/components/label.css,npm/daisyui@5/theme/dark.css" rel="stylesheet" type="text/css" defer/>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" defer></script>
 </head>
 
 <body data-theme="dark" class="base-100 h-screen">
-    <h2 class="p-4">huawei encode/decode xml</h2>
+    <div>
+        <h2 class="p-4">huawei encode/decode xml</h2>
+        <div class="px-4 flex flex-col gap-2">
+            <div>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">hw_tree.xml</legend>
+                    <input type="file" class="file-input" name="" id="xmlInput">
+                </fieldset>
+            </div>
+            <div>
+                decode
+                <input type="checkbox" class="toggle" id="xmlAction" />
+                encode
+            </div>
 
-    <div class="px-4 flex flex-col gap-2">
-        <div>
+            <div id="decode-suc" style="display: none;" class="text-success">output copied to clipboard</div>
+
+            <div class="mt-4">
+                <div>disclaimer</div>
+                <p class="text-sm">tested with HG8145V5</p>
+                <p class="text-sm">haven't able to make the router to accept the encoded file, but test it</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-12">
+        <h2 class="p-4">huawei encode/decode values</h2>
+        <div class="px-4 flex flex-col gap-2">
             <fieldset class="fieldset">
-                <legend class="fieldset-legend">hw_tree.xml</legend>
-                <input type="file" class="file-input" name="" id="fileInput">
+                <legend class="fieldset-legend">value</legend>
+                <input type="text" class="input" placeholder="$2...$" id="valueInput">
+                <p class="label">click enter</p>
             </fieldset>
-        </div>
-        <div>
-            decode
-            <input type="checkbox" class="toggle" id="action" />
-            encode
-        </div>
-
-        <div id="decode-suc" style="display: none;" class="text-success">output copied to clipboard</div>
-
-        <div class="mt-4">
-            <div>disclaimer</div>
-            <p class="text-sm">tested with HG8145V5</p>
-            <p class="text-sm">haven't able to make the router to accept the encoded file, but test it</p>
+            <div>
+                decode
+                <input type="checkbox" class="toggle" id="valueAction" disabled/>
+                encode
+            </div>
+            <fieldset class="fieldset" id="outDiv" style="display: none;">
+                <legend class="fieldset-legend">output</legend>
+                <input type="text" class="input" id="outInput" readonly>
+            </fieldset>
         </div>
     </div>
 
@@ -43,37 +64,71 @@
             go.run(result.instance);
         });
 
-        let fi = document.getElementById("fileInput")
-        let tog = document.getElementById("action")
-        let fo = document.getElementById("fileOutput")
+        let xin = document.getElementById("xmlInput")
+        let xtog = document.getElementById("xmlAction")
+        let xdecsuc = document.getElementById("decode-suc")
 
-        function reset() {
-            document.getElementById("decode-suc").style.display = "none";
+        function xmlReset() {
+            xdecsuc.style.display = "none";
         }
-        fi.onclick = (e) => reset()
-        tog.onclick = (e) => reset()
+        xin.onclick = (e) => xmlReset()
+        xtog.onclick = (e) => xmlReset()
 
-        fi.oninput = async (e) => {
+        xin.oninput = async (e) => {
             let file = e.target.files[0]
             let content = await file.bytes()
-            var action
+            var xmlAction
             var out
-            if (!tog.checked) {
-                out = decode(content)
+            if (!xtog.checked) {
+                out = xmlDecode(content)
                 await navigator.clipboard.writeText(out)
-                document.getElementById("decode-suc").style.display = "block";
-                action = "decoded"
+                xdecsuc.style.display = "block";
+                xmlAction = "decoded"
             } else {
-                out = encode(content)
-                action = "encoded"
+                out = xmlEncode(content)
+                xmlAction = "encoded"
             }
 
             let blob = new Blob([out], { type: 'application/octet-stream' })
             let bloburl = URL.createObjectURL(blob)
             let link = document.createElement('a')
             link.href = bloburl
-            link.download = file.name.replace(/\.xml$/, "") + `_${action}.xml`
+            link.download = file.name.replace(/\.xml$/, "") + `_${xmlAction}.xml`
             link.click()
+        }
+
+        let vin = document.getElementById("valueInput")
+        let vtog = document.getElementById("valueAction")
+        let voutd = document.getElementById("outDiv")
+        let vout = document.getElementById("outInput")
+
+        function valReset() {
+            voutd.style.display = "none"
+        }
+        vin.oninput = (e) => valReset()
+        vtog.onclick = (e) => {
+            if(e.target.checked) {
+                vin.placeholder = "your value"
+            } else {
+                vin.placeholder = "$2...$"
+            }
+            valReset()
+        }
+
+        vin.onkeydown = async (e) => {
+            if (e.key != 'Enter') return
+            let value = vin.value
+            var out
+            if (!vtog.checked) {
+                out = valueDecode(value)
+            } else {
+                // out = valueEncode(value)
+            }
+            if (out == null) {
+                out = "<error check console>"
+            }
+            vout.value = out
+            voutd.style.display = "block"
         }
     </script>
 </body>

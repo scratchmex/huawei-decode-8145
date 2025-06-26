@@ -34,10 +34,10 @@ func main() {
 	switch *mode {
 	case "enc":
 		log.Println("encoding...")
-		output = encode(data)
+		output = XmlEncode(data)
 	case "dec":
 		log.Println("decoding...")
-		output = decode(data)
+		output = XmlDecode(data)
 	}
 
 	fmt.Print(string(output))

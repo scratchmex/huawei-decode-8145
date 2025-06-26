@@ -4,7 +4,10 @@
 
 package main
 
-import "syscall/js"
+import (
+	"fmt"
+	"syscall/js"
+)
 
 func getBytesFromJs(v js.Value) []byte {
 	size := v.Get("byteLength").Int()
@@ -13,15 +16,37 @@ func getBytesFromJs(v js.Value) []byte {
 	return dst
 }
 
+func withRecover() {
+	if r := recover(); r != nil {
+		fmt.Println("Recovered from panic", r)
+	}
+}
+
 func main() {
-	js.Global().Set("encode", js.FuncOf(func(this js.Value, args []js.Value) any {
+
+	js.Global().Set("xmlEncode", js.FuncOf(func(this js.Value, args []js.Value) any {
+		defer withRecover()
 		input := getBytesFromJs(args[0])
-		return string(encode(input))
+		return string(XmlEncode(input))
 	}))
 
-	js.Global().Set("decode", js.FuncOf(func(this js.Value, args []js.Value) any {
+	js.Global().Set("xmlDecode", js.FuncOf(func(this js.Value, args []js.Value) any {
+		defer withRecover()
 		input := getBytesFromJs(args[0])
-		return string(decode(input))
+		return string(XmlDecode(input))
+	}))
+
+	js.Global().Set("valueEncode", js.FuncOf(func(this js.Value, args []js.Value) any {
+		defer withRecover()
+		input := args[0].String()
+		return input
+	}))
+
+	js.Global().Set("valueDecode", js.FuncOf(func(this js.Value, args []js.Value) any {
+		defer withRecover()
+		input := args[0].String()
+		out := ValueDecode(input)
+		return out
 	}))
 
 	select {}
